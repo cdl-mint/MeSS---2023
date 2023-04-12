@@ -1,0 +1,15 @@
+{
+    "Licht": {
+        "device_type": "Lights",
+        "device_room": "string"
+    },
+    "SmartPlug1": {
+        "device_type": "Ventilators",
+        "device_room": "0090"
+    },
+    "Light": {
+        "device_type": "Lights",
+        "device_room": "0090"
+    }
+}
+}

@@ -1,0 +1,78 @@
+version: '3.8'
+services:
+
+  smartroom_airquality_api:
+    container_name: smartroom_airquality_api
+    build:
+      context: .
+      dockerfile: ./SmartRoom_AirQuality/Dockerfile
+    networks:
+      - db_network1
+    command: uvicorn main:app --host 0.0.0.0 --port 8000
+    ports:
+      - 8000:8000
+      - 1884:1884
+    depends_on:
+      - timeScaleDatabaseSRAQDemo
+    volumes:
+      - ./SmartRoom_AirQuality/api/:/app/
+      - ./SmartRoom_AirQuality/devices.json:/app/devices.json
+    environment:
+      - TZ=Europe/Paris
+
+  subscriber:
+    container_name: smartroom_mqtt_subscriber_demo
+    build:
+      context: .
+      dockerfile: ./SmartRoom_AirQuality/Dockerfile_subscriber
+    networks:
+      - db_network1
+    command: python subscriber.py
+
+    depends_on:
+      - smartroom_airquality_api
+    volumes:
+      - ./SmartRoom_AirQuality/devices.json:/app/devices.json
+
+  grafana:
+    container_name: grafana
+    image: grafana/grafana:9.0.6
+    ports:
+      - 3000:3000
+    networks:
+      - db_network1
+
+  timeScaleDatabaseSRAQDemo:
+    container_name: timeScaleDatabaseSRAQDemo
+    image: timescale/timescaledb-ha:pg14-latest
+    restart: always
+    networks:
+      - db_network1
+    volumes:
+      - postgres_data:/var/lib/postgresql/postgres_data
+      - ./Database_Schema.sql:/docker-entrypoint-initdb.d/Database_Schema.sql
+    environment:
+      - PGDATA=/var/lib/postgresql/data/timescale/
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=cdlmint
+      - POSTGRES_DB=cdl-mint
+
+  pgadmin:
+    container_name: pgadmin
+    image: dpage/pgadmin4
+    environment:
+      - PGADMIN_DEFAULT_EMAIL=pgadmin4@pgadmin.org
+      - PGADMIN_DEFAULT_PASSWORD=admin
+    networks:
+      - db_network1
+    ports:
+      - 5051:80
+    depends_on:
+      - timeScaleDatabaseSRAQDemo
+
+volumes:
+  postgres_data:
+  devices.json:
+networks:
+  db_network1:
+    driver: bridge
